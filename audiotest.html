@@ -1,0 +1,52 @@
+<script>
+// Ultra-simple example using the WebAudio API to generate a sine tone.
+//
+// It's a radical simplication of an example here:
+//  http://0xfe.blogspot.com/2011/08/generating-tones-with-web-audio-api.html
+// 
+// See also WebAudio API specification here:
+// https://dvcs.w3.org/hg/audio/raw-file/tip/webaudio/specification.html
+//
+// Gerry Beauregard, March 2012
+
+// Audio generation function            
+function generateAudio(e) 
+{
+	// Get the left and right output buffers
+	var left  = e.outputBuffer.getChannelData(0);
+	var right = e.outputBuffer.getChannelData(1);
+	 
+	// For each output sample
+	var numSamples = right.length;
+	for (var i = 0; i < numSamples; i++) 
+	{
+		// Get a sine wave value
+		var val = 0.1 * Math.sin(currentPhase) + 0.001 * Math.sin(5*currentPhase);
+		 
+		// Put it in the left and right buffer
+		left[i] = val;
+		right[i] = val;
+		 
+		// Increment the phase
+		currentPhase += phaseIncrement+2*prev;
+		prev=prev*0.99995+(Math.random()-0.5)*0.00005;
+	}
+}
+const BUFFER_SIZE = 1024;     // Number of samples to generate on each call to generateAudio. Legal values are 256, 512, 1024, 2048, 4096, 8192, 16384.                
+const NUM_OUTPUTS = 2;      // Number of output channels. We want stereo, hence 2 (though 1 also works??).
+const NUM_INPUTS = 1; // Works properly in Safari 6. We only want to *generate* audio, so our node has no inputs. const NUM_INPUTS = 0 Results in horrible noise in Safari 6
+const SINE_FREQ = 220;	// Frequency of the sine tone.   
+
+var prev=0;
+var context = new webkitAudioContext();// Create the audio context
+var node = context.createJavaScriptNode(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
+node.onaudioprocess = generateAudio;// Specify the audio generation function
+ 
+// Set up the per-sample phase increment based on the desired 
+// sine tone frequency and the sample rate of the audio context.
+var currentPhase = 0.0;
+var phaseIncrement = 2 * Math.PI * SINE_FREQ / context.sampleRate;
+ 
+// Connect the node to a destination, i.e. the audio output.
+node.connect(context.destination);
+</script>
