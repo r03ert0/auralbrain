@@ -42,9 +42,9 @@
 <div style="display:inline" id="loadProgress"></div>
 
 <div>
-	rotx <input type="range" onchange="change(1,this.value)"></input><br/>
-	roty <input type="range" onchange="change(2,this.value)"></input><br/>
-	rotz <input type="range" onchange="change(3,this.value)"></input><br/>
+	rotx <input type="range" max=300 value=1 onchange="change(1,this.value)"></input><br/>
+	roty <input type="range" max=300 value=2 onchange="change(2,this.value)"></input><br/>
+	rotz <input type="range" max=300 value=3 onchange="change(3,this.value)"></input><br/>
 	freq <input type="range" min=0 max=90 value=45 onchange="change(0,this.value)"></input><br/>
 </div>
 
@@ -83,7 +83,7 @@ var	pos=0,myZCoord,mult=300;
 var kPolar=0;
 var	cnv,ctx;
 var	meanR0=45,meanR,phase;
-var xrot=0,yrot=0,zrot=0;
+var xrot=1,yrot=2,zrot=3;
 
 //document.getElementById('file').addEventListener('change', handleFileSelect, false);
 
@@ -540,6 +540,8 @@ node.connect(audioCtx.destination);
 
 init();
 animate();
+
+myclick("sphere.ply");
 
 </script>
 
