@@ -1,23 +1,70 @@
 <html>
 <head>
 <script src="js/jquery-1.8.2.min.js"></script>
+<style>
+	html,body
+	{
+		background-color:#000;
+		color:#fff;
+		font-family:Helvetica,Arial,Sans-Serif;
+		font-size:12px;
+	}
+	input[type=file] {
+	  border-radius: 0px;
+	  color: #fff;
+	  background: black;
+//	  padding: 10px 20px 10px 20px;
+	  //border: solid #fff 1px;
+	}
+	/*
+	#file:hover {
+	  background: #800;
+	}
+	*/
+</style>
 </head>
 <body>
+
+<!--
+<input type="file" id="file" name="files[]"/>
+-->
+
+<select onchange="myclick(this.value)">
+<optgroup label="Select an object">
+  <option value="sphere.ply">Sphere</option>
+  <option value="ellipsoid.ply">Ellipsoid</option>
+  <option value="slow-loris.ply">Nycticebus</option>
+  <option value="sloth-bear.ply">Melursus Ursinus</option>
+  <option value="human.ply">Homo Sapiens</option>
+</optgroup>
+</select>
+
+<div style="display:inline" id="loadProgress"></div>
+
+<div>
+	rotx <input type="range" onchange="change(1,this.value)"></input><br/>
+	roty <input type="range" onchange="change(2,this.value)"></input><br/>
+	rotz <input type="range" onchange="change(3,this.value)"></input><br/>
+	freq <input type="range" min=0 max=90 value=45 onchange="change(0,this.value)"></input><br/>
+</div>
 
 <table>
 <tr>
 <td>
-<div id="surface" style="width:500px;height:100%">
+	<div id="surface" style="width:500px;height:600px">
+	</div>
 </td>
 <td>
-<canvas id="slice" width="500px" height="600px" style="border:1 solid"></canvas>
+	<canvas id="slice" width="500px" height="600px" style="border:1 solid">
+	</canvas>
 </td>
 </tr>
 </table>
 
 <script src="js/three.min.js"></script>
+<script src="js/EventDispatcher.js"></script>
 <script src="js/TrackballControls.js"></script>
-<script src="js/BinaryLoader.js"></script>
+<script src="js/PLYLoader.js"></script>
 <script src="js/CopyShader.js"></script>
 <script src="js/SSAOShader.js"></script>
 <script src="js/EffectComposer.js"></script>
@@ -29,17 +76,82 @@
 var container;
 var camera,tb,scene,renderer,composer,depthMaterial,depthTarget,projector;
 var mouse = new THREE.Vector2(), offset = new THREE.Vector3(),INTERSECTED, SELECTED;
-var mesh,plane;
-var	slice=new Array(),edge=new Array(),sbuffer=new Array();
-var	pos,myZCoord,mult=200;
+var mesh=0,plane;
+var	slice=new Array(),edge=new Array();
+var	sbuffer_work=new Array(),sbuffer_read=new Array();
+var	pos=0,myZCoord,mult=300;
 var kPolar=0;
+var	cnv,ctx;
+var	meanR0=45,meanR,phase;
+var xrot=0,yrot=0,zrot=0;
 
-function init(specimen) {
+//document.getElementById('file').addEventListener('change', handleFileSelect, false);
 
+function change(i,v)
+{
+	switch(i)
+	{
+		case 0: meanR0=v; break;
+		case 1: xrot=v; break;
+		case 2: yrot=v; break;
+		case 3: zrot=v; break;
+	}
+}
+function myclick(filename)
+{
+	var path="data/"+filename;
+	var oReq = new XMLHttpRequest();
+	oReq.open("GET",path, true);
+	oReq.addEventListener("progress", function(e){$("#loadProgress").html(parseInt(100*e.loaded/e.total)+"%")}, false);
+	oReq.responseType="text";
+	oReq.onload = function(oEvent)
+	{
+		console.log("object finished loading");
+		var tmp=this.response;
+		var geometry=new THREE.PLYLoader().parse(tmp);
+		geometry.sourceType = "ply";
+		var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
+		newMesh.name = filename;
+		initMesh(newMesh);
+		$("#loadProgress").html("");
+	};
+	oReq.send();
+	console.log("object started loading");
+}
+function handleFileSelect(evt)
+{
+	console.log($("#file").attr('files'));
+
+	var file = evt.target.files[0];
+	var filename=file.name;
+
+	var reader = new FileReader();
+	reader.onload = function() {
+		var contents=this.result;
+		var geometry = new THREE.PLYLoader().parse( contents );
+		geometry.sourceType = "ply";
+		geometry.sourceFile = file.name;
+		var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
+		newMesh.name = filename;
+		initMesh(newMesh);
+	};
+	reader.readAsText(file);
+}
+function initMesh(newMesh)
+{
+	scene.remove(mesh);
+	scene.add(newMesh);
+	mesh=newMesh;
+	pos=0;
+	sliceBrain(myZCoord);
+}
+function init()
+{
+	phase=1;
 	myZCoord=0;
 	container = document.getElementById('surface');
 	var width = container.clientWidth;
-	var height = window.innerHeight;
+	var height = container.clientWidth;
 
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize(width,height);
@@ -56,21 +168,11 @@ function init(specimen) {
 
 	projector = new THREE.Projector();
 
-	// add the brain mesh
-	var loader = new THREE.BinaryLoader(true);
-	loader.showStatus=true;
-	var callbackSync = function( result ) {}
-	var callbackProgress = function( progress, result ) {console.log(progress);}
-	loader.callbackSync=callbackSync;
-	loader.callbackProgress=callbackProgress;
-	document.body.appendChild( loader.statusDomElement );
-	loader.load(specimen, setupMesh);
-	
 	// add the plane
 	plane = new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshBasicMaterial({color:0xff0000,opacity:0.1,side:THREE.DoubleSide}));
 	plane.overdraw = true;
 	scene.add(plane);
-	
+
 	// depth
 	var depthShader = THREE.ShaderLib[ "depthRGBA" ];
 	var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
@@ -96,14 +198,10 @@ function init(specimen) {
 	renderer.domElement.addEventListener( 'mouseup', onDocumentMouseUp, false );
 	window.addEventListener('resize',onWindowResize,false);
 	document.body.addEventListener('keydown', keyrelease, false);
-}
-function setupMesh(geometry,material)
-{
-	mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
-	scene.add(mesh);
-	//this.statusDomElement.style.display = "none";
-	pos=0;
-   sliceBrain(myZCoord);
+
+	cnv = document.getElementById("slice");
+	ctx = cnv.getContext("2d");
+	ctx.translate(0.5,0.5);
 }
 function onDocumentMouseDown( event ) {
 	event.preventDefault();
@@ -166,17 +264,27 @@ function onDocumentMouseUp( event ) {
 	*/
 }
 function onWindowResize() {
+	/*
 	camera.aspect = container.clientWidth/400;
 	camera.updateProjectionMatrix();
 	renderer.setSize( container.clientWidth,400 );
+	*/
 }
 function animate(){
-	requestAnimationFrame(animate);
+	//requestAnimationFrame(animate);
+	setTimeout(animate,1000/30);
 	tb.update();
 	scene.overrideMaterial = depthMaterial;
 	renderer.render( scene, camera, depthTarget );
 	scene.overrideMaterial = null;
 	composer.render();
+	
+	plane.rotation.x+=xrot/1000;
+	plane.rotation.y+=yrot/1000;
+	plane.rotation.z+=zrot/1000;
+	
+	if(mesh)
+		sliceBrain(myZCoord);
 }
 function fillSBuffer(p0,p1)
 {
@@ -198,67 +306,128 @@ function fillSBuffer(p0,p1)
 	
 	if(a0<a1)
 	{
-		for(a=a0;a<=a1;a++)
+		if(Math.abs(a0-a1)<200)
 		{
-			t=(a-a0)/(a1-a0);
-			r=r0*(1-t)+r1*t;
-			if(sbuffer[a]<r)
-				sbuffer[a]=r;
+			for(a=a0;a<=a1;a++)
+			{
+				t=(a-a0)/(a1-a0);
+				r=r0*(1-t)+r1*t;
+				if(sbuffer_work[a]<r)
+					sbuffer_work[a]=r;
+			}
+		}
+		else
+		{
+			l=Math.floor(mult*Math.PI*2);
+			a0+=l;
+			for(a=a1;a<=a0;a++)
+			{
+				t=(a-a1)/(a0-a1);
+				r=r0*(1-t)+r1*t;
+				if(sbuffer_work[a%l]<r)
+					sbuffer_work[a%l]=r;
+			}
+			
 		}
 	}
 	else
-		sbuffer[a0]=r0;
+	{
+		if(sbuffer_work[a0]<r0)
+			sbuffer_work[a0]=r0;
+	}
 }
 function sliceBrain(zcoord)
 {
 	slice=[];
 	edge=[];
-	for(i=0;i<=Math.floor(2*Math.PI*mult);i++) sbuffer[i]=0;
+	for(i=0;i<=Math.floor(2*Math.PI*mult);i++)
+		sbuffer_work[i]=0;
 	
+	// compute inverse rotation matrix
+	var M=new THREE.Matrix4();
+	M.makeRotationFromEuler(plane.rotation,'XYZ');
+	
+	// compute intersection contour
 	var n=0;
+	var a;
+	var b;
+	var c;
 	for(i=0;i<mesh.geometry.faces.length;i++)
 	{
 		a=mesh.geometry.vertices[mesh.geometry.faces[i].a];
 		b=mesh.geometry.vertices[mesh.geometry.faces[i].b];
 		c=mesh.geometry.vertices[mesh.geometry.faces[i].c];
+		
+		az=M.elements[8]*a.x+M.elements[9]*a.y+M.elements[10]*a.z+M.elements[14];
+		bz=M.elements[8]*b.x+M.elements[9]*b.y+M.elements[10]*b.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
+		cz=M.elements[8]*c.x+M.elements[9]*c.y+M.elements[10]*c.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
 	
-		ab=(a.z-zcoord)*(b.z-zcoord);
-		bc=(b.z-zcoord)*(c.z-zcoord);
-		ca=(c.z-zcoord)*(a.z-zcoord);
+		ab=(az-zcoord)*(bz-zcoord);
+		bc=(bz-zcoord)*(cz-zcoord);
+		ca=(cz-zcoord)*(az-zcoord);
 	
 		if(ab<=0&&bc<=0 &&ca>0)
 		{
-			slice.push([0.5*(a.x+b.x),0.5*(a.y+b.y)]);
-			slice.push([0.5*(b.x+c.x),0.5*(b.y+c.y)]);
+			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+			a0=(zcoord-az)/(bz-az);
+			a1=(zcoord-bz)/(cz-bz);
+			slice.push([(1-a0)*ax+a0*bx,(1-a0)*ay+a0*by]);
+			slice.push([(1-a1)*bx+a1*cx,(1-a1)*by+a1*cy]);
 			fillSBuffer(slice[n],slice[n+1]);
 			n+=2;
 		}
 		else
 		if(bc<=0&&ca<=0 &&ab>0)
 		{
-			slice.push([0.5*(b.x+c.x),0.5*(b.y+c.y)]);
-			slice.push([0.5*(c.x+a.x),0.5*(c.y+a.y)]);
+			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+			a0=(zcoord-bz)/(cz-bz);
+			a1=(zcoord-cz)/(az-cz);
+			slice.push([(1-a0)*bx+a0*cx,(1-a0)*by+a0*cy]);
+			slice.push([(1-a1)*cx+a1*ax,(1-a1)*cy+a1*ay]);
 			fillSBuffer(slice[n],slice[n+1]);
 			n+=2;
 		}
 		else
-		if(ca&&ab<=0 &&bc>0)
+		if(ca<=0&&ab<=0 &&bc>0)
 		{
-			slice.push([0.5*(c.x+a.x),0.5*(c.y+a.y)]);
-			slice.push([0.5*(a.x+b.x),0.5*(a.y+b.y)]);
+			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+			a0=(zcoord-cz)/(az-cz);
+			a1=(zcoord-az)/(bz-az);
+			slice.push([(1-a0)*cx+a0*ax,(1-a0)*cy+a0*ay]);
+			slice.push([(1-a1)*ax+a1*bx,(1-a1)*ay+a1*by]);
 			fillSBuffer(slice[n],slice[n+1]);
 			n+=2;
 		}
 	}
 	
-	min=0;
+	// normalise amplitude and compute mean radius (used to determine frequency)
+	meanR=0;
 	max=50;
-	for(i=0;i<sbuffer.length;i++)
-		sbuffer[i]=1-2*sbuffer[i]/max;
-	
-	var cnv = document.getElementById("slice");
-	var ctx = cnv.getContext("2d");
-	
+	for(i=0;i<sbuffer_work.length;i++)
+	{
+		meanR+=sbuffer_work[i];
+		sbuffer_work[i]=1-2*sbuffer_work[i]/max;
+	}
+	meanR/=sbuffer_work.length;
+	phase=meanR0/meanR;
+
+	// draw contour, either in cartesian coordinates or inverse polar
+	ctx.clearRect(0,0,500,600);
 	ctx.beginPath();
 	for(i=0;i<slice.length;i+=2)
 	{
@@ -288,37 +457,53 @@ function sliceBrain(zcoord)
 			ctx.lineTo(250+4*p1[0],250-4*p1[1]);
 		}
 	}
+	
+	// draw left/right waveforms
+	// left
+	ctx.moveTo(0,550+50*sbuffer_work[0]*Math.cos(Math.PI));
+	for(i=1;i<sbuffer_work.length;i++)
+		ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.cos(i/mult-Math.PI));
+	// right
+	ctx.moveTo(0,550+50*sbuffer_work[0]*Math.sin(Math.PI));
+	for(i=1;i<sbuffer_work.length;i++)
+		ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.sin(i/mult-Math.PI));
+	ctx.strokeStyle='#f00';
+	ctx.stroke();
+
+	// draw grid
+	ctx.beginPath();
 	ctx.moveTo(0,250);
 	ctx.lineTo(500,250);
 	ctx.moveTo(250,0);
 	ctx.lineTo(250,500);
 	
-	ctx.moveTo(0,550+50*sbuffer[0]);
-	for(i=1;i<sbuffer.length;i++)
-	{
-		ctx.lineTo(i*500/sbuffer.length,550+50*sbuffer[i]);
-		//console.log(sbuffer[i]);
-	}
 	ctx.moveTo(0,500);
 	ctx.lineTo(500,500);
 	ctx.moveTo(0,550);
 	ctx.lineTo(500,550);
 
-	ctx.clearRect(0,0,500,600);
+	ctx.strokeStyle='#fff';
 	ctx.stroke();
+	
+	var tmp=sbuffer_work;
+	sbuffer_work=sbuffer_read;
+	sbuffer_read=tmp;
 }
 function keyrelease(evt)
 {
 	var delta=0.5;
 
-   evt.preventDefault();
    console.log("keyCode: ",evt.keyCode);
    if(evt.keyCode==39)
 		myZCoord+=delta;
+	else
 	if(evt.keyCode==37)
 		myZCoord-=delta;
+	else
 	if(evt.keyCode==80)
 		kPolar=!kPolar;
+	else
+		return;
    sliceBrain(myZCoord);
    plane.position.z=myZCoord;
    
@@ -327,34 +512,33 @@ function keyrelease(evt)
 
 function generateAudio(e) 
 {
-	// Get the left and right output buffers
 	var left  = e.outputBuffer.getChannelData(0);
 	var right = e.outputBuffer.getChannelData(1);
-	// For each output sample
-	var numSamples = right.length;
-	var	numVertex=sbuffer.length;
+	var numSamples=left.length;
+	var	sampleRate=audioCtx.sampleRate;
+	var	numVertex=sbuffer_read.length-2;
 	var	vol=1;
 	
 	for (var i = 0; i < numSamples; i++) 
 	{
-		left[i] = vol*sbuffer[((pos+i)%numVertex)];
-		right[i] =vol*sbuffer[((pos+i)%numVertex)];
+		j=Math.round(pos+i*phase)%numVertex;
+		left[i] =vol*sbuffer_read[j]*Math.cos(j/mult-Math.PI);
+		right[i]=vol*sbuffer_read[j]*Math.sin(j/mult-Math.PI);
 	}
-	pos=(pos+i)%numVertex;
+	pos=(pos+i*phase)%numVertex;
 }
-const BUFFER_SIZE = 1024;     // Number of samples to generate on each call to generateAudio. Legal values are 256, 512, 1024, 2048, 4096, 8192, 16384.                
-const NUM_OUTPUTS = 2;      // Number of output channels. We want stereo, hence 2 (though 1 also works??).
-const NUM_INPUTS = 1; // Works properly in Safari 6. We only want to *generate* audio, so our node has no inputs. const NUM_INPUTS = 0 Results in horrible noise in Safari 6
-const SINE_FREQ = 110;	// Frequency of the sine tone.   
+const BUFFER_SIZE=1024;	// Number of samples to generate on each call to generateAudio. Legal values are 256, 512, 1024, 2048, 4096, 8192, 16384.                
+const NUM_OUTPUTS=2;	// Number of output channels. We want stereo, hence 2 (though 1 also works??).
+const NUM_INPUTS=1;		// Works properly in Safari 6. We only want to *generate* audio, so our node has no inputs. const NUM_INPUTS = 0 Results in horrible noise in Safari 6
 
-var context = new webkitAudioContext();// Create the audio context
-var node = context.createJavaScriptNode(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
+var audioCtx = new webkitAudioContext();// Create the audio context
+var node = audioCtx.createJavaScriptNode(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
 node.onaudioprocess = generateAudio;// Specify the audio generation function
  
 // Connect the node to a destination, i.e. the audio output.
-node.connect(context.destination);
+node.connect(audioCtx.destination);
 
-init("mesh.js");
+init();
 animate();
 
 </script>
