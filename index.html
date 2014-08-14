@@ -531,8 +531,8 @@ const BUFFER_SIZE=1024;	// Number of samples to generate on each call to generat
 const NUM_OUTPUTS=2;	// Number of output channels. We want stereo, hence 2 (though 1 also works??).
 const NUM_INPUTS=1;		// Works properly in Safari 6. We only want to *generate* audio, so our node has no inputs. const NUM_INPUTS = 0 Results in horrible noise in Safari 6
 
-var audioCtx = new webkitAudioContext();// Create the audio context
-var node = audioCtx.createJavaScriptNode(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
+var audioCtx = new AudioContext();// Create the audio context
+var node = audioCtx.createScriptProcessor(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
 node.onaudioprocess = generateAudio;// Specify the audio generation function
  
 // Connect the node to a destination, i.e. the audio output.
