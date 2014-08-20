@@ -1,0 +1,127 @@
+<html>
+<head>
+<script src="js/jquery-1.8.2.min.js"></script>
+</head>
+<body>
+<div id="output">
+    <label id="region" />
+    <label id="value" />
+</div>
+<script>
+var    sbuffer_work=new Array(),sbuffer_read=new Array();
+var pos=0;
+
+function FileHelper()
+{}
+{
+    FileHelper.readStringFromFileAtPath = function(pathOfFileToReadFrom)
+    {
+        var request = new XMLHttpRequest();
+        request.open("GET", pathOfFileToReadFrom, false);
+        request.send(null);
+        var returnValue = request.responseText;
+
+        return returnValue;
+    }
+}
+
+function fillSBuffer(p0,p1)
+{
+    r0=Math.sqrt(p0[0]*p0[0]+p0[1]*p0[1]);
+    a0=Math.floor( mult*(Math.atan2(p0[0],p0[1])+Math.PI) );
+
+    r1=Math.sqrt(p1[0]*p1[0]+p1[1]*p1[1]);
+    a1=Math.floor( mult*(Math.atan2(p1[0],p1[1])+Math.PI) );
+
+    if(a0>a1)
+    {
+        rtmp=r0;
+        atmp=a0;
+        r0=r1;
+        a0=a1;
+        r1=rtmp;
+        a1=atmp;
+    }
+
+    if(a0<a1)
+    {
+        if(Math.abs(a0-a1)<200)
+        {
+            for(a=a0;a<=a1;a++)
+            {
+                t=(a-a0)/(a1-a0);
+                r=r0*(1-t)+r1*t;
+                if(sbuffer_work[a]<r)
+                    sbuffer_work[a]=r;
+            }
+        }
+        else
+        {
+            l=Math.floor(mult*Math.PI*2);
+            a0+=l;
+            for(a=a1;a<=a0;a++)
+            {
+                t=(a-a1)/(a0-a1);
+                r=r0*(1-t)+r1*t;
+                if(sbuffer_work[a%l]<r)
+                    sbuffer_work[a%l]=r;
+            }
+
+        }
+    }
+    else
+    {
+        if(sbuffer_work[a0]<r0)
+            sbuffer_work[a0]=r0;
+    }
+}
+
+function generateAudio(e)
+{
+    var left  = e.outputBuffer.getChannelData(0);
+    var right = e.outputBuffer.getChannelData(1);
+    var numSamples=left.length;
+    var    sampleRate=audioCtx.sampleRate;
+    var    numVertex=sbuffer_read.length-2;
+    var    vol=1;
+
+    phase=mult=0;
+    numVerex=1024;
+    for (var i = 0; i < numSamples; i++)
+    {
+        left[i] =vol*sin((pos+i)*times_array[0]);
+        right[i]=vol*sin((pos+i)*times_array[1]);
+    }
+    pos=(pos+i*phase)%numVertex;
+}
+const BUFFER_SIZE=1024;    // Number of samples to generate on each call to generateAudio. Legal values are 256, 512, 1024, 2048, 4096, 8192, 16384.
+const NUM_OUTPUTS=2;    // Number of output channels. We want stereo, hence 2 (though 1 also works??).
+const NUM_INPUTS=1;        // Works properly in Safari 6. We only want to *generate* audio, so our node has no inputs. const NUM_INPUTS = 0 Results in horrible noise in Safari 6
+
+var audioCtx = new webkitAudioContext();// Create the audio context
+var node = audioCtx.createJavaScriptNode(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
+node.onaudioprocess = generateAudio;// Specify the audio generation function
+
+// Connect the node to a destination, i.e. the audio output.
+node.connect(audioCtx.destination);
+
+var coordtxt = FileHelper.readStringFromFileAtPath('coord.txt');
+var coord_array = coordtxt.trim().split(' ').map(function(x){return parseFloat(x)});
+console.log(coord_array);
+
+var tstxt = FileHelper.readStringFromFileAtPath('tseries.txt');
+var times_array =  tstxt.trim().split('\n').map(
+    function(x){
+        x = x.trim().split(' ')
+        return x.map(
+            function(y){
+                return parseFloat(y);})});
+
+// $('#region').text(coordtxt)
+$('#output').text(times_array);
+console.log(times_array);
+for(i=0;i<1024;i++){sbuffer_read[i]=times_array[0][i%232];};
+
+</script>
+</body>
+</html>
