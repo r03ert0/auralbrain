@@ -2,25 +2,20 @@
 <head>
 <script src="js/jquery-1.8.2.min.js"></script>
 <style>
-	html,body
-	{
-		background-color:#000;
-		color:#fff;
-		font-family:Helvetica,Arial,Sans-Serif;
-		font-size:12px;
-	}
-	input[type=file] {
-	  border-radius: 0px;
-	  color: #fff;
-	  background: black;
+    html,body
+    {
+        background-color:#000;
+        color:#fff;
+        font-family:Helvetica,Arial,Sans-Serif;
+        font-size:12px;
+    }
+    input[type=file] {
+      border-radius: 0px;
+      color: #fff;
+      background: black;
 //	  padding: 10px 20px 10px 20px;
-	  //border: solid #fff 1px;
-	}
-	/*
-	#file:hover {
-	  background: #800;
-	}
-	*/
+      //border: solid #fff 1px;
+    }
 </style>
 </head>
 <body>
@@ -36,27 +31,29 @@
   <option value="slow-loris.ply">Nycticebus</option>
   <option value="sloth-bear.ply">Melursus Ursinus</option>
   <option value="human.ply">Homo Sapiens</option>
+  <option value="sphere-airports-smooth.ply">Airports</option>
+  <option value="sphere-jazz-smooth.ply">Jazz</option>
 </optgroup>
 </select>
 
 <div style="display:inline" id="loadProgress"></div>
 
 <div>
-	rotx <input type="range" max=300 value=1 onchange="change(1,this.value)"></input><br/>
-	roty <input type="range" max=300 value=2 onchange="change(2,this.value)"></input><br/>
-	rotz <input type="range" max=300 value=3 onchange="change(3,this.value)"></input><br/>
-	freq <input type="range" min=0 max=90 value=45 onchange="change(0,this.value)"></input><br/>
+    rotx <input type="range" max=300 value=1 onchange="change(1,this.value)"></input><br/>
+    roty <input type="range" max=300 value=2 onchange="change(2,this.value)"></input><br/>
+    rotz <input type="range" max=300 value=3 onchange="change(3,this.value)"></input><br/>
+    freq <input type="range" min=0 max=90 value=45 onchange="change(0,this.value)"></input><br/>
 </div>
 
 <table>
 <tr>
 <td>
-	<div id="surface" style="width:500px;height:600px">
-	</div>
+    <div id="surface" style="width:500px;height:600px">
+    </div>
 </td>
 <td>
-	<canvas id="slice" width="500px" height="600px" style="border:1 solid">
-	</canvas>
+    <canvas id="slice" width="500px" height="600px" style="border:1 solid">
+    </canvas>
 </td>
 </tr>
 </table>
@@ -89,443 +86,443 @@ var xrot=1,yrot=2,zrot=3;
 
 function change(i,v)
 {
-	switch(i)
-	{
-		case 0: meanR0=v; break;
-		case 1: xrot=v; break;
-		case 2: yrot=v; break;
-		case 3: zrot=v; break;
-	}
+    switch(i)
+    {
+        case 0: meanR0=v; break;
+        case 1: xrot=v; break;
+        case 2: yrot=v; break;
+        case 3: zrot=v; break;
+    }
 }
 function myclick(filename)
 {
-	var path="data/"+filename;
-	var oReq = new XMLHttpRequest();
-	oReq.open("GET",path, true);
-	oReq.addEventListener("progress", function(e){$("#loadProgress").html(parseInt(100*e.loaded/e.total)+"%")}, false);
-	oReq.responseType="text";
-	oReq.onload = function(oEvent)
-	{
-		console.log("object finished loading");
-		var tmp=this.response;
-		var geometry=new THREE.PLYLoader().parse(tmp);
-		geometry.sourceType = "ply";
-		var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
-		newMesh.name = filename;
-		initMesh(newMesh);
-		$("#loadProgress").html("");
-	};
-	oReq.send();
-	console.log("object started loading");
+    var path="data/"+filename;
+    var oReq = new XMLHttpRequest();
+    oReq.open("GET",path, true);
+    oReq.addEventListener("progress", function(e){$("#loadProgress").html(parseInt(100*e.loaded/e.total)+"%")}, false);
+    oReq.responseType="text";
+    oReq.onload = function(oEvent)
+    {
+        console.log("object finished loading");
+        var tmp=this.response;
+        var geometry=new THREE.PLYLoader().parse(tmp);
+        geometry.sourceType = "ply";
+        var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
+        newMesh.name = filename;
+        initMesh(newMesh);
+        $("#loadProgress").html("");
+    };
+    oReq.send();
+    console.log("object started loading");
 }
 function handleFileSelect(evt)
 {
-	console.log($("#file").attr('files'));
+    console.log($("#file").attr('files'));
 
-	var file = evt.target.files[0];
-	var filename=file.name;
+    var file = evt.target.files[0];
+    var filename=file.name;
 
-	var reader = new FileReader();
-	reader.onload = function() {
-		var contents=this.result;
-		var geometry = new THREE.PLYLoader().parse( contents );
-		geometry.sourceType = "ply";
-		geometry.sourceFile = file.name;
-		var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
-		newMesh.name = filename;
-		initMesh(newMesh);
-	};
-	reader.readAsText(file);
+    var reader = new FileReader();
+    reader.onload = function() {
+        var contents=this.result;
+        var geometry = new THREE.PLYLoader().parse( contents );
+        geometry.sourceType = "ply";
+        geometry.sourceFile = file.name;
+        var	newMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0xffffff}));
+        newMesh.name = filename;
+        initMesh(newMesh);
+    };
+    reader.readAsText(file);
 }
 function initMesh(newMesh)
 {
-	scene.remove(mesh);
-	scene.add(newMesh);
-	mesh=newMesh;
-	pos=0;
-	sliceBrain(myZCoord);
+    scene.remove(mesh);
+    scene.add(newMesh);
+    mesh=newMesh;
+    pos=0;
+    sliceBrain(myZCoord);
 }
 function init()
 {
-	phase=1;
-	myZCoord=0;
-	container = document.getElementById('surface');
-	var width = container.clientWidth;
-	var height = container.clientWidth;
+    phase=1;
+    myZCoord=0;
+    container = document.getElementById('surface');
+    var width = container.clientWidth;
+    var height = container.clientWidth;
 
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize(width,height);
-	container.appendChild(renderer.domElement);
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(width,height);
+    container.appendChild(renderer.domElement);
 
-	camera = new THREE.PerspectiveCamera(25,width/height,10,1000 );
-	camera.position.z = 300;
+    camera = new THREE.PerspectiveCamera(25,width/height,10,1000 );
+    camera.position.z = 300;
 
-	tb = new THREE.TrackballControls(camera,container);
-	tb.noZoom=true;
-	tb.noPan=true;
+    tb = new THREE.TrackballControls(camera,container);
+    tb.noZoom=true;
+    tb.noPan=true;
 
-	scene = new THREE.Scene();
+    scene = new THREE.Scene();
 
-	projector = new THREE.Projector();
+    projector = new THREE.Projector();
 
-	// add the plane
-	plane = new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshBasicMaterial({color:0xff0000,opacity:0.1,side:THREE.DoubleSide}));
-	plane.overdraw = true;
-	scene.add(plane);
+    // add the plane
+    plane = new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshBasicMaterial({color:0xff0000,opacity:0.1,side:THREE.DoubleSide}));
+    plane.overdraw = true;
+    scene.add(plane);
 
-	// depth
-	var depthShader = THREE.ShaderLib[ "depthRGBA" ];
-	var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
-	depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
-	depthMaterial.blending = THREE.NoBlending;
+    // depth
+    var depthShader = THREE.ShaderLib[ "depthRGBA" ];
+    var depthUniforms = THREE.UniformsUtils.clone( depthShader.uniforms );
+    depthMaterial = new THREE.ShaderMaterial( { fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms } );
+    depthMaterial.blending = THREE.NoBlending;
 
-	// postprocessing
-	composer = new THREE.EffectComposer( renderer );
-	composer.addPass( new THREE.RenderPass( scene, camera ) );
-	depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
-	var effect = new THREE.ShaderPass( THREE.SSAOShader );
-	effect.uniforms[ 'tDepth' ].value = depthTarget;
-	effect.uniforms[ 'size' ].value.set( width, height );
-	effect.uniforms[ 'cameraNear' ].value = camera.near;
-	effect.uniforms[ 'cameraFar' ].value = camera.far;
-	effect.uniforms[ 'lumInfluence' ].value = 0.5;
-	//effect.uniforms[ 'aoClamp' ].value = 0.9;
-	effect.renderToScreen = true;
-	composer.addPass( effect );
+    // postprocessing
+    composer = new THREE.EffectComposer( renderer );
+    composer.addPass( new THREE.RenderPass( scene, camera ) );
+    depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+    var effect = new THREE.ShaderPass( THREE.SSAOShader );
+    effect.uniforms[ 'tDepth' ].value = depthTarget;
+    effect.uniforms[ 'size' ].value.set( width, height );
+    effect.uniforms[ 'cameraNear' ].value = camera.near;
+    effect.uniforms[ 'cameraFar' ].value = camera.far;
+    effect.uniforms[ 'lumInfluence' ].value = 0.5;
+    //effect.uniforms[ 'aoClamp' ].value = 0.9;
+    effect.renderToScreen = true;
+    composer.addPass( effect );
 
-	renderer.domElement.addEventListener( 'mousemove', onDocumentMouseMove, false );
-	renderer.domElement.addEventListener( 'mousedown', onDocumentMouseDown, false );
-	renderer.domElement.addEventListener( 'mouseup', onDocumentMouseUp, false );
-	window.addEventListener('resize',onWindowResize,false);
-	document.body.addEventListener('keydown', keyrelease, false);
+    renderer.domElement.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    renderer.domElement.addEventListener( 'mousedown', onDocumentMouseDown, false );
+    renderer.domElement.addEventListener( 'mouseup', onDocumentMouseUp, false );
+    window.addEventListener('resize',onWindowResize,false);
+    document.body.addEventListener('keydown', keyrelease, false);
 
-	cnv = document.getElementById("slice");
-	ctx = cnv.getContext("2d");
-	ctx.translate(0.5,0.5);
+    cnv = document.getElementById("slice");
+    ctx = cnv.getContext("2d");
+    ctx.translate(0.5,0.5);
 }
 function onDocumentMouseDown( event ) {
-	event.preventDefault();
-	var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
-	projector.unprojectVector( vector, camera );
-	var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-	/*
-	var intersects = raycaster.intersectObjects( neurones );
-	if ( intersects.length > 0 ) {
-		controls.enabled = false;
-		lastSelected=SELECTED = intersects[ 0 ].object;
-		var intersects = raycaster.intersectObject( plane );
-		offset.copy( intersects[ 0 ].point ).sub( plane.position );
-		container.style.cursor = 'move';
-	}
-	*/
+    event.preventDefault();
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+    projector.unprojectVector( vector, camera );
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+    /*
+    var intersects = raycaster.intersectObjects( neurones );
+    if ( intersects.length > 0 ) {
+        controls.enabled = false;
+        lastSelected=SELECTED = intersects[ 0 ].object;
+        var intersects = raycaster.intersectObject( plane );
+        offset.copy( intersects[ 0 ].point ).sub( plane.position );
+        container.style.cursor = 'move';
+    }
+    */
 }
 function onDocumentMouseMove( event )
 {
-	event.preventDefault();
-	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-	var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
-	projector.unprojectVector( vector, camera );
-	var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-	if ( SELECTED ) {
-		var intersects = raycaster.intersectObject( plane );
-		SELECTED.position.copy( intersects[0].point.sub( offset ) );
-		for(i=0;i<SELECTED.edgelist.length;i++)
-			SELECTED.edgelist[i].geometry.verticesNeedUpdate = true;
-		return;
-	}
-	/*
-	var intersects = raycaster.intersectObjects( neurones );
-	if ( intersects.length > 0 ) {
-		if ( INTERSECTED != intersects[ 0 ].object ) {
-			if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
-			INTERSECTED = intersects[0].object;
-			INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-			plane.position.copy( INTERSECTED.position );
-			plane.lookAt( camera.position );
-		}
-		container.style.cursor = 'pointer';
-	} else {
-		if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
-		INTERSECTED = null;
-		container.style.cursor = 'auto';
-	}
-	*/
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+    projector.unprojectVector( vector, camera );
+    var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+    if ( SELECTED ) {
+        var intersects = raycaster.intersectObject( plane );
+        SELECTED.position.copy( intersects[0].point.sub( offset ) );
+        for(i=0;i<SELECTED.edgelist.length;i++)
+            SELECTED.edgelist[i].geometry.verticesNeedUpdate = true;
+        return;
+    }
+    /*
+    var intersects = raycaster.intersectObjects( neurones );
+    if ( intersects.length > 0 ) {
+        if ( INTERSECTED != intersects[ 0 ].object ) {
+            if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+            INTERSECTED = intersects[0].object;
+            INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+            plane.position.copy( INTERSECTED.position );
+            plane.lookAt( camera.position );
+        }
+        container.style.cursor = 'pointer';
+    } else {
+        if ( INTERSECTED ) INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+        INTERSECTED = null;
+        container.style.cursor = 'auto';
+    }
+    */
 }
 function onDocumentMouseUp( event ) {
-	event.preventDefault();
-	/*
-	controls.enabled = true;
-	if ( INTERSECTED ) {
-		plane.position.copy( INTERSECTED.position );
-		SELECTED = null;
-	}
-	container.style.cursor = 'auto';
-	*/
+    event.preventDefault();
+    /*
+    controls.enabled = true;
+    if ( INTERSECTED ) {
+        plane.position.copy( INTERSECTED.position );
+        SELECTED = null;
+    }
+    container.style.cursor = 'auto';
+    */
 }
 function onWindowResize() {
-	/*
-	camera.aspect = container.clientWidth/400;
-	camera.updateProjectionMatrix();
-	renderer.setSize( container.clientWidth,400 );
-	*/
+    /*
+    camera.aspect = container.clientWidth/400;
+    camera.updateProjectionMatrix();
+    renderer.setSize( container.clientWidth,400 );
+    */
 }
 function animate(){
-	//requestAnimationFrame(animate);
-	setTimeout(animate,1000/30);
-	tb.update();
-	scene.overrideMaterial = depthMaterial;
-	renderer.render( scene, camera, depthTarget );
-	scene.overrideMaterial = null;
-	composer.render();
-	
-	plane.rotation.x+=xrot/1000;
-	plane.rotation.y+=yrot/1000;
-	plane.rotation.z+=zrot/1000;
-	
-	if(mesh)
-		sliceBrain(myZCoord);
+    //requestAnimationFrame(animate);
+    setTimeout(animate,1000/30);
+    tb.update();
+    scene.overrideMaterial = depthMaterial;
+    renderer.render( scene, camera, depthTarget );
+    scene.overrideMaterial = null;
+    composer.render();
+
+    plane.rotation.x+=xrot/1000;
+    plane.rotation.y+=yrot/1000;
+    plane.rotation.z+=zrot/1000;
+
+    if(mesh)
+        sliceBrain(myZCoord);
 }
 function fillSBuffer(p0,p1)
 {
-	r0=Math.sqrt(p0[0]*p0[0]+p0[1]*p0[1]);
-	a0=Math.floor( mult*(Math.atan2(p0[0],p0[1])+Math.PI) );
+    r0=Math.sqrt(p0[0]*p0[0]+p0[1]*p0[1]);
+    a0=Math.floor( mult*(Math.atan2(p0[0],p0[1])+Math.PI) );
 
-	r1=Math.sqrt(p1[0]*p1[0]+p1[1]*p1[1]);
-	a1=Math.floor( mult*(Math.atan2(p1[0],p1[1])+Math.PI) );
-	
-	if(a0>a1)
-	{
-		rtmp=r0;
-		atmp=a0;
-		r0=r1;
-		a0=a1;
-		r1=rtmp;
-		a1=atmp;
-	}
-	
-	if(a0<a1)
-	{
-		if(Math.abs(a0-a1)<200)
-		{
-			for(a=a0;a<=a1;a++)
-			{
-				t=(a-a0)/(a1-a0);
-				r=r0*(1-t)+r1*t;
-				if(sbuffer_work[a]<r)
-					sbuffer_work[a]=r;
-			}
-		}
-		else
-		{
-			l=Math.floor(mult*Math.PI*2);
-			a0+=l;
-			for(a=a1;a<=a0;a++)
-			{
-				t=(a-a1)/(a0-a1);
-				r=r0*(1-t)+r1*t;
-				if(sbuffer_work[a%l]<r)
-					sbuffer_work[a%l]=r;
-			}
-			
-		}
-	}
-	else
-	{
-		if(sbuffer_work[a0]<r0)
-			sbuffer_work[a0]=r0;
-	}
+    r1=Math.sqrt(p1[0]*p1[0]+p1[1]*p1[1]);
+    a1=Math.floor( mult*(Math.atan2(p1[0],p1[1])+Math.PI) );
+
+    if(a0>a1)
+    {
+        rtmp=r0;
+        atmp=a0;
+        r0=r1;
+        a0=a1;
+        r1=rtmp;
+        a1=atmp;
+    }
+
+    if(a0<a1)
+    {
+        if(Math.abs(a0-a1)<200)
+        {
+            for(a=a0;a<=a1;a++)
+            {
+                t=(a-a0)/(a1-a0);
+                r=r0*(1-t)+r1*t;
+                if(sbuffer_work[a]<r)
+                    sbuffer_work[a]=r;
+            }
+        }
+        else
+        {
+            l=Math.floor(mult*Math.PI*2);
+            a0+=l;
+            for(a=a1;a<=a0;a++)
+            {
+                t=(a-a1)/(a0-a1);
+                r=r0*(1-t)+r1*t;
+                if(sbuffer_work[a%l]<r)
+                    sbuffer_work[a%l]=r;
+            }
+        
+        }
+    }
+    else
+    {
+        if(sbuffer_work[a0]<r0)
+            sbuffer_work[a0]=r0;
+    }
 }
 function sliceBrain(zcoord)
 {
-	slice=[];
-	edge=[];
-	for(i=0;i<=Math.floor(2*Math.PI*mult);i++)
-		sbuffer_work[i]=0;
-	
-	// compute inverse rotation matrix
-	var M=new THREE.Matrix4();
-	M.makeRotationFromEuler(plane.rotation,'XYZ');
-	
-	// compute intersection contour
-	var n=0;
-	var a;
-	var b;
-	var c;
-	for(i=0;i<mesh.geometry.faces.length;i++)
-	{
-		a=mesh.geometry.vertices[mesh.geometry.faces[i].a];
-		b=mesh.geometry.vertices[mesh.geometry.faces[i].b];
-		c=mesh.geometry.vertices[mesh.geometry.faces[i].c];
-		
-		az=M.elements[8]*a.x+M.elements[9]*a.y+M.elements[10]*a.z+M.elements[14];
-		bz=M.elements[8]*b.x+M.elements[9]*b.y+M.elements[10]*b.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
-		cz=M.elements[8]*c.x+M.elements[9]*c.y+M.elements[10]*c.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
-	
-		ab=(az-zcoord)*(bz-zcoord);
-		bc=(bz-zcoord)*(cz-zcoord);
-		ca=(cz-zcoord)*(az-zcoord);
-	
-		if(ab<=0&&bc<=0 &&ca>0)
-		{
-			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
-			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
-			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
-			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
-			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
-			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
-			a0=(zcoord-az)/(bz-az);
-			a1=(zcoord-bz)/(cz-bz);
-			slice.push([(1-a0)*ax+a0*bx,(1-a0)*ay+a0*by]);
-			slice.push([(1-a1)*bx+a1*cx,(1-a1)*by+a1*cy]);
-			fillSBuffer(slice[n],slice[n+1]);
-			n+=2;
-		}
-		else
-		if(bc<=0&&ca<=0 &&ab>0)
-		{
-			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
-			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
-			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
-			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
-			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
-			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
-			a0=(zcoord-bz)/(cz-bz);
-			a1=(zcoord-cz)/(az-cz);
-			slice.push([(1-a0)*bx+a0*cx,(1-a0)*by+a0*cy]);
-			slice.push([(1-a1)*cx+a1*ax,(1-a1)*cy+a1*ay]);
-			fillSBuffer(slice[n],slice[n+1]);
-			n+=2;
-		}
-		else
-		if(ca<=0&&ab<=0 &&bc>0)
-		{
-			ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
-			ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
-			bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
-			by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
-			cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
-			cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
-			a0=(zcoord-cz)/(az-cz);
-			a1=(zcoord-az)/(bz-az);
-			slice.push([(1-a0)*cx+a0*ax,(1-a0)*cy+a0*ay]);
-			slice.push([(1-a1)*ax+a1*bx,(1-a1)*ay+a1*by]);
-			fillSBuffer(slice[n],slice[n+1]);
-			n+=2;
-		}
-	}
-	
-	// normalise amplitude and compute mean radius (used to determine frequency)
-	meanR=0;
-	max=50;
-	for(i=0;i<sbuffer_work.length;i++)
-	{
-		meanR+=sbuffer_work[i];
-		sbuffer_work[i]=1-2*sbuffer_work[i]/max;
-	}
-	meanR/=sbuffer_work.length;
-	phase=meanR0/meanR;
+    slice=[];
+    edge=[];
+    for(i=0;i<=Math.floor(2*Math.PI*mult);i++)
+        sbuffer_work[i]=0;
 
-	// draw contour, either in cartesian coordinates or inverse polar
-	ctx.clearRect(0,0,500,600);
-	ctx.beginPath();
-	for(i=0;i<slice.length;i+=2)
-	{
-		ia=i;
-		ib=i+1;
-		
-		p0=slice[ia];
-		p1=slice[ib];
-		
-		r0=Math.sqrt(p0[0]*p0[0]+p0[1]*p0[1]);
-		a0=Math.atan2(p0[0],p0[1]);
+    // compute inverse rotation matrix
+    var M=new THREE.Matrix4();
+    M.makeRotationFromEuler(plane.rotation,'XYZ');
 
-		r1=Math.sqrt(p1[0]*p1[0]+p1[1]*p1[1]);
-		a1=Math.atan2(p1[0],p1[1]);
+    // compute intersection contour
+    var n=0;
+    var a;
+    var b;
+    var c;
+    for(i=0;i<mesh.geometry.faces.length;i++)
+    {
+        a=mesh.geometry.vertices[mesh.geometry.faces[i].a];
+        b=mesh.geometry.vertices[mesh.geometry.faces[i].b];
+        c=mesh.geometry.vertices[mesh.geometry.faces[i].c];
+    
+        az=M.elements[8]*a.x+M.elements[9]*a.y+M.elements[10]*a.z+M.elements[14];
+        bz=M.elements[8]*b.x+M.elements[9]*b.y+M.elements[10]*b.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
+        cz=M.elements[8]*c.x+M.elements[9]*c.y+M.elements[10]*c.z+M.elements[14]; // favourite bug: a.z+M.elements[14];
 
-		if(kPolar)
-		{
-			if(Math.abs(a0)<3&&Math.abs(a1)<3)
-			{
-				ctx.moveTo(250+a0*250/Math.PI,250-4*r0);
-				ctx.lineTo(250+a1*250/Math.PI,250-4*r1);
-			}
-		}
-		else
-		{
-			ctx.moveTo(250+4*p0[0],250-4*p0[1]);
-			ctx.lineTo(250+4*p1[0],250-4*p1[1]);
-		}
-	}
-	
-	// draw left/right waveforms
-	// left
-	ctx.moveTo(0,550+50*sbuffer_work[0]*Math.cos(Math.PI));
-	for(i=1;i<sbuffer_work.length;i++)
-		ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.cos(i/mult-Math.PI));
-	// right
-	ctx.moveTo(0,550+50*sbuffer_work[0]*Math.sin(Math.PI));
-	for(i=1;i<sbuffer_work.length;i++)
-		ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.sin(i/mult-Math.PI));
-	ctx.strokeStyle='#f00';
-	ctx.stroke();
+        ab=(az-zcoord)*(bz-zcoord);
+        bc=(bz-zcoord)*(cz-zcoord);
+        ca=(cz-zcoord)*(az-zcoord);
 
-	// draw grid
-	ctx.beginPath();
-	ctx.moveTo(0,250);
-	ctx.lineTo(500,250);
-	ctx.moveTo(250,0);
-	ctx.lineTo(250,500);
-	
-	ctx.moveTo(0,500);
-	ctx.lineTo(500,500);
-	ctx.moveTo(0,550);
-	ctx.lineTo(500,550);
+        if(ab<=0&&bc<=0 &&ca>0)
+        {
+            ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+            ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+            bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+            by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+            cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+            cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+            a0=(zcoord-az)/(bz-az);
+            a1=(zcoord-bz)/(cz-bz);
+            slice.push([(1-a0)*ax+a0*bx,(1-a0)*ay+a0*by]);
+            slice.push([(1-a1)*bx+a1*cx,(1-a1)*by+a1*cy]);
+            fillSBuffer(slice[n],slice[n+1]);
+            n+=2;
+        }
+        else
+        if(bc<=0&&ca<=0 &&ab>0)
+        {
+            ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+            ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+            bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+            by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+            cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+            cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+            a0=(zcoord-bz)/(cz-bz);
+            a1=(zcoord-cz)/(az-cz);
+            slice.push([(1-a0)*bx+a0*cx,(1-a0)*by+a0*cy]);
+            slice.push([(1-a1)*cx+a1*ax,(1-a1)*cy+a1*ay]);
+            fillSBuffer(slice[n],slice[n+1]);
+            n+=2;
+        }
+        else
+        if(ca<=0&&ab<=0 &&bc>0)
+        {
+            ax=M.elements[0]*a.x+M.elements[1]*a.y+M.elements[2]*a.z+M.elements[12];
+            ay=M.elements[4]*a.x+M.elements[5]*a.y+M.elements[6]*a.z+M.elements[13];
+            bx=M.elements[0]*b.x+M.elements[1]*b.y+M.elements[2]*b.z+M.elements[12];
+            by=M.elements[4]*b.x+M.elements[5]*b.y+M.elements[6]*b.z+M.elements[13];
+            cx=M.elements[0]*c.x+M.elements[1]*c.y+M.elements[2]*c.z+M.elements[12];
+            cy=M.elements[4]*c.x+M.elements[5]*c.y+M.elements[6]*c.z+M.elements[13];
+            a0=(zcoord-cz)/(az-cz);
+            a1=(zcoord-az)/(bz-az);
+            slice.push([(1-a0)*cx+a0*ax,(1-a0)*cy+a0*ay]);
+            slice.push([(1-a1)*ax+a1*bx,(1-a1)*ay+a1*by]);
+            fillSBuffer(slice[n],slice[n+1]);
+            n+=2;
+        }
+    }
 
-	ctx.strokeStyle='#fff';
-	ctx.stroke();
-	
-	var tmp=sbuffer_work;
-	sbuffer_work=sbuffer_read;
-	sbuffer_read=tmp;
+    // normalise amplitude and compute mean radius (used to determine frequency)
+    meanR=0;
+    max=50;
+    for(i=0;i<sbuffer_work.length;i++)
+    {
+        meanR+=sbuffer_work[i];
+        sbuffer_work[i]=1-2*sbuffer_work[i]/max;
+    }
+    meanR/=sbuffer_work.length;
+    phase=meanR0/meanR;
+
+    // draw contour, either in cartesian coordinates or inverse polar
+    ctx.clearRect(0,0,500,600);
+    ctx.beginPath();
+    for(i=0;i<slice.length;i+=2)
+    {
+        ia=i;
+        ib=i+1;
+    
+        p0=slice[ia];
+        p1=slice[ib];
+    
+        r0=Math.sqrt(p0[0]*p0[0]+p0[1]*p0[1]);
+        a0=Math.atan2(p0[0],p0[1]);
+
+        r1=Math.sqrt(p1[0]*p1[0]+p1[1]*p1[1]);
+        a1=Math.atan2(p1[0],p1[1]);
+
+        if(kPolar)
+        {
+            if(Math.abs(a0)<3&&Math.abs(a1)<3)
+            {
+                ctx.moveTo(250+a0*250/Math.PI,250-4*r0);
+                ctx.lineTo(250+a1*250/Math.PI,250-4*r1);
+            }
+        }
+        else
+        {
+            ctx.moveTo(250+4*p0[0],250-4*p0[1]);
+            ctx.lineTo(250+4*p1[0],250-4*p1[1]);
+        }
+    }
+
+    // draw left/right waveforms
+    // left
+    ctx.moveTo(0,550+50*sbuffer_work[0]*Math.cos(Math.PI));
+    for(i=1;i<sbuffer_work.length;i++)
+        ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.cos(i/mult-Math.PI));
+    // right
+    ctx.moveTo(0,550+50*sbuffer_work[0]*Math.sin(Math.PI));
+    for(i=1;i<sbuffer_work.length;i++)
+        ctx.lineTo(i*500/sbuffer_work.length,550+50*sbuffer_work[i]*Math.sin(i/mult-Math.PI));
+    ctx.strokeStyle='#f00';
+    ctx.stroke();
+
+    // draw grid
+    ctx.beginPath();
+    ctx.moveTo(0,250);
+    ctx.lineTo(500,250);
+    ctx.moveTo(250,0);
+    ctx.lineTo(250,500);
+
+    ctx.moveTo(0,500);
+    ctx.lineTo(500,500);
+    ctx.moveTo(0,550);
+    ctx.lineTo(500,550);
+
+    ctx.strokeStyle='#fff';
+    ctx.stroke();
+
+    var tmp=sbuffer_work;
+    sbuffer_work=sbuffer_read;
+    sbuffer_read=tmp;
 }
 function keyrelease(evt)
 {
-	var delta=0.5;
+    var delta=0.5;
 
    console.log("keyCode: ",evt.keyCode);
    if(evt.keyCode==39)
-		myZCoord+=delta;
-	else
-	if(evt.keyCode==37)
-		myZCoord-=delta;
-	else
-	if(evt.keyCode==80)
-		kPolar=!kPolar;
-	else
-		return;
+        myZCoord+=delta;
+    else
+    if(evt.keyCode==37)
+        myZCoord-=delta;
+    else
+    if(evt.keyCode==80)
+        kPolar=!kPolar;
+    else
+        return;
    sliceBrain(myZCoord);
    plane.position.z=myZCoord;
-   
+
    return;
 }
 
 function generateAudio(e) 
 {
-	var left  = e.outputBuffer.getChannelData(0);
-	var right = e.outputBuffer.getChannelData(1);
-	var numSamples=left.length;
-	var	sampleRate=audioCtx.sampleRate;
-	var	numVertex=sbuffer_read.length-2;
-	var	vol=1;
-	
-	for (var i = 0; i < numSamples; i++) 
-	{
-		j=Math.round(pos+i*phase)%numVertex;
-		left[i] =vol*sbuffer_read[j]*Math.cos(j/mult-Math.PI);
-		right[i]=vol*sbuffer_read[j]*Math.sin(j/mult-Math.PI);
-	}
-	pos=(pos+i*phase)%numVertex;
+    var left  = e.outputBuffer.getChannelData(0);
+    var right = e.outputBuffer.getChannelData(1);
+    var numSamples=left.length;
+    var	sampleRate=audioCtx.sampleRate;
+    var	numVertex=sbuffer_read.length-2;
+    var	vol=1;
+
+    for (var i = 0; i < numSamples; i++) 
+    {
+        j=Math.round(pos+i*phase)%numVertex;
+        left[i] =vol*sbuffer_read[j]*Math.cos(j/mult-Math.PI);
+        right[i]=vol*sbuffer_read[j]*Math.sin(j/mult-Math.PI);
+    }
+    pos=(pos+i*phase)%numVertex;
 }
 const BUFFER_SIZE=1024;	// Number of samples to generate on each call to generateAudio. Legal values are 256, 512, 1024, 2048, 4096, 8192, 16384.                
 const NUM_OUTPUTS=2;	// Number of output channels. We want stereo, hence 2 (though 1 also works??).
@@ -540,7 +537,7 @@ var audioCtx = window.AudioContext ? new window.AudioContext() :
            undefined;
 var node = audioCtx.createScriptProcessor(BUFFER_SIZE, NUM_INPUTS, NUM_OUTPUTS);// Create a source node
 node.onaudioprocess = generateAudio;// Specify the audio generation function
- 
+
 // Connect the node to a destination, i.e. the audio output.
 node.connect(audioCtx.destination);
 
